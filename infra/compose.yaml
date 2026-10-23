@@ -1,0 +1,27 @@
+name: claimworkflow-local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-claimworkflow}
+      POSTGRES_USER: ${POSTGRES_USER:-claimworkflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-claimworkflow_local}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:-claimworkflow_app_local}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+      - ../src/main/resources/db/migration:/migrations:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:

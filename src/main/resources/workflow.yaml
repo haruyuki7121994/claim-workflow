@@ -1,0 +1,75 @@
+workflow:
+  id: claim-lifecycle
+  version: '1'
+  initial-state: SUBMITTED
+  initial-task: {type: VERIFY_DOCUMENTS, required-role: document_clerk}
+  states: [SUBMITTED, DOCUMENTS_VERIFIED, UNDER_ASSESSMENT, PENDING_INFO, APPROVED, REJECTED, PAYMENT_INITIATED, CLOSED]
+  policies:
+    informationRequestLimit:
+      max: 3
+      error: 'Maximum information requests exceeded — escalate to team lead'
+  transitions:
+    - id: verify-documents
+      from: SUBMITTED
+      to: DOCUMENTS_VERIFIED
+      roles: [document_clerk]
+      guards: [documentsComplete]
+      actions: [notifyAssessorTeam]
+      next-task: {type: ASSIGN_ASSESSOR, required-role: team_lead}
+    - id: start-assessment
+      from: DOCUMENTS_VERIFIED
+      to: UNDER_ASSESSMENT
+      roles: [team_lead]
+      guards: [assessorAssigned]
+      actions: [logAssessmentStart]
+      next-task: {type: ASSESS_CLAIM, required-role: assessor}
+    - id: approve
+      from: UNDER_ASSESSMENT
+      to: APPROVED
+      roles: [assessor]
+      guards: [assessmentComplete, amountWithinPolicyLimit]
+      actions: [notifyMember, createPaymentRequest]
+      next-task: {type: INITIATE_PAYMENT, required-role: finance}
+    - id: reject
+      from: UNDER_ASSESSMENT
+      to: REJECTED
+      roles: [assessor]
+      guards: [assessmentComplete, rejectionReasonProvided]
+      actions: [notifyRejection]
+      next-task: {type: CLOSE_REJECTION, required-role: system}
+    - id: request-more-information
+      from: UNDER_ASSESSMENT
+      to: PENDING_INFO
+      roles: [assessor]
+      guards: [missingInfoDescriptionProvided]
+      policies: [informationRequestLimit]
+      actions: [notifyMemberWithRequestDetails]
+      clear-facts: [assessmentComplete, newInformationReceived]
+      next-task: {type: WAIT_FOR_NEW_INFORMATION, required-role: document_clerk}
+    - id: receive-information
+      from: PENDING_INFO
+      to: DOCUMENTS_VERIFIED
+      roles: [document_clerk]
+      guards: [newInformationReceived]
+      actions: [resetAssessmentTimer]
+      clear-facts: [missingInfoDescription, rejectionReason]
+      next-task: {type: ASSIGN_ASSESSOR, required-role: team_lead}
+    - id: initiate-payment
+      from: APPROVED
+      to: PAYMENT_INITIATED
+      roles: [finance]
+      guards: [paymentRequestCreated]
+      actions: [triggerPayment]
+      next-task: {type: CONFIRM_PAYMENT, required-role: finance}
+    - id: close-paid
+      from: PAYMENT_INITIATED
+      to: CLOSED
+      roles: [finance]
+      guards: [paymentConfirmed]
+      actions: [notifyPaymentConfirmation]
+    - id: close-rejected
+      from: REJECTED
+      to: CLOSED
+      roles: [system]
+      guards: [appealExpiredOrAcknowledged]
+      actions: [archiveClaim]

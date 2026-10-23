@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Claims Workflow</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+    <header><h1>Claims Workflow</h1><p>Inspect claims, allowed transitions, audit history, and side effects.</p></header>
+    <section class="card auth">
+        <label>Bearer token <input id="token" type="password" autocomplete="off" placeholder="JWT from your identity provider"></label>
+        <button id="connect">Connect</button><span id="status"></span>
+    </section>
+    <section class="grid">
+        <div class="card">
+            <div class="row"><h2>Claims</h2><button id="refresh">Refresh</button></div>
+            <form id="create"><input id="amount" type="number" min="0.01" step="0.01" placeholder="Amount" required>
+                <input id="limit" type="number" min="0.01" step="0.01" placeholder="Policy limit" required><button>Create</button></form>
+            <div id="claims" class="list"></div>
+        </div>
+        <div class="card">
+            <h2>Selected claim</h2><pre id="claim">Select a claim.</pre>
+            <h3>Evidence</h3>
+            <form id="evidence"><input id="facts" placeholder='{"documentsComplete":true}' required><button>Update</button></form>
+            <h3>Available transitions</h3><div id="transitions" class="actions"></div>
+        </div>
+    </section>
+    <section class="grid">
+        <div class="card"><h2>Audit history</h2><div id="audit" class="list"></div></div>
+        <div class="card"><h2>Side effects</h2><div id="effects" class="list"></div></div>
+    </section>
+    <div id="error" role="alert"></div>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>
